@@ -1,68 +1,60 @@
--- Script para exibir ESP de outros jogadores
+
+
+
+-- Script para exibir ESP de outros jogadores de forma mais discreta
 local p = game:GetService("Players")
 local r = game:GetService("RunService")
 local lp = p.LocalPlayer
-local c = game:GetService("Workspace").CurrentCamera
 local d = 3000 -- Distância máxima para exibir ESP
 local e = {} -- Tabela de armazenamento
 
+-- Função para criar o ESP invisível
 local function a(t)
     if t == lp or e[t] then return end
     
-    local b = Instance.new("BillboardGui")
-    b.Size = UDim2.new(0, 200, 0, 60)
-    b.StudsOffset = Vector3.new(0, 2, 0)
-    b.AlwaysOnTop = true
-    b.Enabled = false
+    -- Criar um Part invisível para servir como marcador
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(0.5, 0.5, 0.5)  -- Pequeno para não chamar muita atenção
+    part.Shape = Enum.PartType.Ball  -- Usar uma forma não óbvia
+    part.CanCollide = false
+    part.Anchored = true
+    part.Transparency = 1  -- Tornar invisível
+    part.Parent = game.Workspace
     
-    local n = Instance.new("TextLabel")
-    n.Parent = b
-    n.Size = UDim2.new(1, 0, 0.5, 0)
-    n.Position = UDim2.new(0, 0, 0, 0)
-    n.BackgroundTransparency = 1
-    n.TextColor3 = Color3.new(1, 0, 0)
-    n.TextStrokeTransparency = 0.5
-    n.Font = Enum.Font.SourceSansBold
-    n.TextSize = 14
+    -- Colocar o marcador na cabeça do jogador
+    local h = t.Character and t.Character:FindFirstChild("Head")
+    if h then
+        part.Position = h.Position
+    end
     
-    local h = Instance.new("TextLabel")
-    h.Parent = b
-    h.Size = UDim2.new(1, 0, 0.5, 0)
-    h.Position = UDim2.new(0, 0, 0.5, 0)
-    h.BackgroundTransparency = 1
-    h.TextColor3 = Color3.new(0, 1, 0)
-    h.TextStrokeTransparency = 0.5
-    h.Font = Enum.Font.SourceSansBold
-    h.TextSize = 14
-    
-    b.Parent = t.Character and t.Character:FindFirstChild("Head")
-    e[t] = { b = b, n = n, h = h }
+    -- Armazenar o marcador para remoção posterior
+    e[t] = part
 end
 
+-- Função para atualizar a posição do ESP invisível
 local function u()
-    for t, v in pairs(e) do
+    for t, part in pairs(e) do
         if t.Character and t.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            local r = t.Character.HumanoidRootPart
-            local h = t.Character:FindFirstChild("Head")
-            local hm = t.Character:FindFirstChild("Humanoid")
-            local s = (lp.Character.HumanoidRootPart.Position - r.Position).Magnitude
-            if s <= d and hm and h then
-                v.n.Text = string.format("%s\n[%.0f Studs]", t.Name, s)
-                v.h.Text = string.format("Vida: %.0f", hm.Health)
-                v.b.Enabled = true
-                v.b.Parent = h
+            local root = t.Character.HumanoidRootPart
+            local distance = (lp.Character.HumanoidRootPart.Position - root.Position).Magnitude
+            
+            -- Se o jogador está dentro da distância de exibição
+            if distance <= d then
+                part.Position = root.Position + Vector3.new(0, 2, 0)  -- Ajustar a posição para acima da cabeça
             else
-                v.b.Enabled = false
+                part.Position = Vector3.new(0, -1000, 0)  -- Mover para longe, para não ser visível
             end
         else
-            if v.b then v.b:Destroy() end
+            -- Remover marcador se o jogador não estiver mais no jogo
+            if part then part:Destroy() end
             e[t] = nil
         end
     end
 end
 
+-- Função para adicionar o ESP invisível a novos jogadores
 local function o(t)
-    task.wait(math.random(0.05, 0.2))
+    task.wait(math.random(0.05, 0.2))  -- Atraso aleatório para não ser tão óbvio
     local function s()
         if t.Character then
             a(t)
@@ -73,12 +65,16 @@ local function o(t)
     s()
 end
 
+-- Aplicar o ESP invisível a todos os jogadores
 for _, t in pairs(p:GetPlayers()) do
     o(t)
 end
 
+-- Quando um novo jogador entrar, adicionar o ESP invisível
 p.PlayerAdded:Connect(o)
+
+-- Atualizar a posição dos ESPs invisíveis constantemente
 r.RenderStepped:Connect(function()
-    task.wait(math.random(0.03, 0.07))
+    task.wait(math.random(0.03, 0.07))  -- Atraso para evitar detecção
     u()
 end)
