@@ -1,6 +1,3 @@
-
-
-
 -- Script para exibir ESP de outros jogadores de forma mais discreta
 local p = game:GetService("Players")
 local r = game:GetService("RunService")
